@@ -1,6 +1,7 @@
 package main.ui;
 
 import main.model.Boid;
+import main.model.BoidType;
 import main.simulation.FlockSimulation;
 import main.spatial.*;
 import javax.swing.*;
@@ -16,9 +17,11 @@ public class BoidPanel extends JPanel implements ActionListener {
     
     private final JSlider boidCountSlider;
     private final JSlider radiusSlider;
+    private final JSlider wanderSlider;
     private final JButton playPauseButton;
     private final JComboBox<SpatialIndexOption> spatialIndexCombo;
     private final JLabel performanceLabel;
+    private final JLabel populationLabel;
     
     private static final int PANEL_WIDTH = 1000;
     private static final int PANEL_HEIGHT = 700;
@@ -70,6 +73,18 @@ public class BoidPanel extends JPanel implements ActionListener {
         radiusSlider.addChangeListener(e -> {
             simulation.setNeighborRadius(radiusSlider.getValue());
         });
+
+        wanderSlider = new JSlider(0, 100, (int) (simulation.getWanderShare() * 100));
+        wanderSlider.setMajorTickSpacing(25);
+        wanderSlider.setMinorTickSpacing(5);
+        wanderSlider.setPaintTicks(true);
+        wanderSlider.setPaintLabels(true);
+        wanderSlider.addChangeListener(e -> {
+            simulation.setWanderShare(wanderSlider.getValue() / 100.0);
+            simulation.setBoidCount(boidCountSlider.getValue());
+            updateLabels();
+            repaint();
+        });
         
         playPauseButton = new JButton("Start");
         playPauseButton.addActionListener(e -> togglePlayPause());
@@ -90,6 +105,7 @@ public class BoidPanel extends JPanel implements ActionListener {
         });
         
         performanceLabel = new JLabel("Iteration time: 0.0 ms");
+        populationLabel = new JLabel(populationText());
         
         JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
         controlPanel.setPreferredSize(new Dimension(PANEL_WIDTH, CONTROL_HEIGHT));
@@ -98,9 +114,12 @@ public class BoidPanel extends JPanel implements ActionListener {
         controlPanel.add(boidCountSlider);
         controlPanel.add(new JLabel("Radius:"));
         controlPanel.add(radiusSlider);
+        controlPanel.add(new JLabel("Wanderers %:"));
+        controlPanel.add(wanderSlider);
         controlPanel.add(playPauseButton);
         controlPanel.add(spatialIndexCombo);
         controlPanel.add(performanceLabel);
+        controlPanel.add(populationLabel);
         
         add(controlPanel, BorderLayout.SOUTH);
     }
@@ -127,6 +146,13 @@ public class BoidPanel extends JPanel implements ActionListener {
     private void updateLabels() {
         performanceLabel.setText(String.format("Iteration time: %.2f ms", 
             simulation.getLastIterationTimeMs()));
+        populationLabel.setText(populationText());
+    }
+
+    private String populationText() {
+        int standard = simulation.getCountByType(BoidType.STANDARD);
+        int wanderers = simulation.getCountByType(BoidType.WANDERER);
+        return String.format("Standard: %d | Wanderers: %d", standard, wanderers);
     }
 
     @Override
